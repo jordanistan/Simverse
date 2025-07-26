@@ -3,7 +3,7 @@ import uvicorn
 import json
 import db
 import docker_sync
-from docker_bridge import control_container
+from docker_bridge import get_docker_client, get_all_containers, get_container_stats, control_container, get_container_logs, create_agent
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from typing import List
@@ -88,7 +88,19 @@ async def websocket_endpoint(websocket: WebSocket):
             action = command.get("action")
             container_id = command.get("container_id")
 
-            if action and container_id:
+            if action == 'get_logs' and container_id:
+                print(f"Fetching logs for {container_id[:12]}...")
+                success, logs = get_container_logs(container_id)
+                log_data = {
+                    "type": "logs",
+                    "container_id": container_id,
+                    "success": success,
+                    "logs": logs
+                }
+                await websocket.send_text(json.dumps(log_data))
+                print(f"Sent logs for {container_id[:12]} to client.")
+
+            elif action in ['start', 'stop', 'restart'] and container_id:
                 print(f"Received command: {action} on {container_id[:12]}")
                 success, message = control_container(container_id, action)
                 print(message)
@@ -96,6 +108,25 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_json({"type": "command_receipt", "success": success, "message": message})
                 # Trigger an immediate sync and broadcast to all clients
                 asyncio.create_task(sync_and_broadcast(once=True))
+
+            elif action == "create_agent":
+                name = command.get("name")
+                image = command.get("image", "hello-world") # Default to hello-world if not provided
+                if not name:
+                    await websocket.send_json({"type": "error", "message": "Agent name is required."})
+                else:
+                    print(f"WebSocket request to create agent: {name} from image {image}")
+                    success, result = create_agent(name, image)
+                    if success:
+                        print("Agent creation successful, running sync and broadcasting...")
+                        await websocket.send_json({"type": "command_receipt", "success": True, "message": f"Agent {name} created successfully."})
+                        # Trigger an immediate sync and broadcast to all clients
+                        asyncio.create_task(sync_and_broadcast(once=True))
+                    else:
+                        await websocket.send_json({"type": "error", "message": f"Failed to create agent: {result}"})
+            
+            else:
+                print(f"Received unknown command or missing data: {command}")
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)

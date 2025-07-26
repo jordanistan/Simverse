@@ -3,9 +3,10 @@ import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { buttonStyle } from './styles';
 
-const Echo = ({ agent, position, color = 'cyan', isSelected, onSelect, onCommand }) => {
+const Echo = ({ agent, position, color = 'cyan', isSelected, onSelect, onCommand, logs }) => {
   const meshRef = useRef();
   const [isHovered, setIsHovered] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
 
   // Add a subtle bobbing animation
   useFrame((state) => {
@@ -57,7 +58,34 @@ const Echo = ({ agent, position, color = 'cyan', isSelected, onSelect, onCommand
               >
                 Restart
               </button>
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  onCommand(agent.id, 'get_logs');
+                  setShowLogs(!showLogs);
+                }} 
+                style={buttonStyle}
+              >
+                {showLogs ? 'Hide Logs' : 'View Logs'}
+              </button>
             </div>
+            {showLogs && (
+              <div style={{
+                marginTop: '10px',
+                padding: '8px',
+                background: 'rgba(0,0,0,0.9)',
+                border: '1px solid #555',
+                borderRadius: '4px',
+                maxHeight: '200px',
+                maxWidth: '400px',
+                overflowY: 'auto',
+                whiteSpace: 'pre-wrap',
+                fontSize: '12px',
+                fontFamily: 'monospace'
+              }}>
+                {logs ? logs : 'Loading logs...'}
+              </div>
+            )}
           </div>
         </Html>
       )}

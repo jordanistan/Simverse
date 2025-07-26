@@ -3,6 +3,8 @@ import { OrbitControls, Stars } from '@react-three/drei';
 import useWebSocket from '../hooks/useWebSocket';
 import Zone from './Zone';
 import Echo from './Echo';
+import RetiredEcho from './RetiredEcho';
+import AlphaNode from './AlphaNode';
 
 // Define the layout and properties of the zones
 const ZONES_LAYOUT = {
@@ -26,12 +28,16 @@ const assignZone = (agentStatus) => {
 const Scene = () => {
   const { data, sendMessage } = useWebSocket('ws://localhost:8502/ws');
   const [agents, setAgents] = useState([]);
+  const [retiredAgents, setRetiredAgents] = useState([]);
   const [selectedAgentId, setSelectedAgentId] = useState(null);
+  const [agentLogs, setAgentLogs] = useState({}); // Stores logs by agent ID
+
+  const activeAgents = useMemo(() => agents.filter(a => a.active), [agents]);
 
   // Memoize agent positions so they don't jump around on every render
   const agentPositions = useMemo(() => {
     const positions = {};
-    agents.forEach(agent => {
+    agents.forEach(agent => { // Use the main agents list for stable positioning
       const zoneKey = assignZone(agent.status);
       const zone = ZONES_LAYOUT[zoneKey];
       // Generate a stable, pseudo-random position based on the agent's ID to prevent jitter
@@ -50,8 +56,16 @@ const Scene = () => {
   }, [agents]);
 
   useEffect(() => {
-    if (data && data.agents) {
-      setAgents(data.agents);
+    if (!data) return;
+
+    if (data.type === 'full_update' && data.agents) {
+      setAgents(data.agents.filter(a => a.active));
+      setRetiredAgents(data.agents.filter(a => !a.active));
+    } else if (data.type === 'logs' && data.container_id) {
+      setAgentLogs(prevLogs => ({
+        ...prevLogs,
+        [data.container_id]: data.logs || 'No logs received or an error occurred.',
+      }));
     }
   }, [data]);
 
@@ -62,6 +76,11 @@ const Scene = () => {
   const handleControlCommand = (container_id, action) => {
     console.log(`Sending command: ${action} to ${container_id.substring(0, 12)}`);
     sendMessage({ action, container_id });
+  };
+
+  const handleCreateAgent = (name, image) => {
+    console.log(`Sending create_agent command: ${name}, ${image}`);
+    sendMessage({ action: 'create_agent', name, image });
   };
 
   return (
@@ -75,7 +94,8 @@ const Scene = () => {
         <Zone key={zone.name} name={zone.name} position={zone.position} size={[10, 10]} />
       ))}
 
-      {agents.map(agent => {
+      {/* Render Active Echos */}
+      {activeAgents.map(agent => {
         const zoneKey = assignZone(agent.status);
         const zone = ZONES_LAYOUT[zoneKey];
         const position = agentPositions[agent.id] || zone.position;
@@ -89,9 +109,28 @@ const Scene = () => {
             isSelected={selectedAgentId === agent.id}
             onSelect={handleSelectAgent}
             onCommand={handleControlCommand}
+            logs={agentLogs[agent.id]}
           />
         );
       })}
+
+      {/* Render Retired Echos in the Omega Gate */}
+      {retiredAgents.map(agent => {
+        const zone = ZONES_LAYOUT.OMEGA_GATE;
+        const position = agentPositions[agent.id] || zone.position;
+        return (
+          <RetiredEcho 
+            key={agent.id} 
+            agent={agent} 
+            position={position} 
+          />
+        );
+      })}
+
+      <AlphaNode 
+        position={ZONES_LAYOUT.ALPHA_HALL.position} 
+        onCreateAgent={handleCreateAgent} 
+      />
 
       <OrbitControls />
     </>
