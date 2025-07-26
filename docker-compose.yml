@@ -1,0 +1,15 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount the source code for live-reloading
+      - ./frontend:/app
+      # Prevent the local node_modules from overwriting the container's
+      - /app/node_modules
+    environment:
+      # This helps with hot-reloading in some containerized setups
+      - CHOKIDAR_USEPOLLING=true

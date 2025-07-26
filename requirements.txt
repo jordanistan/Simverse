@@ -1,0 +1,8 @@
+streamlit
+fastapi
+uvicorn
+docker
+pytest
+pytest-asyncio
+websockets
+httpx

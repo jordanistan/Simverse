@@ -1,0 +1,99 @@
+# alpha_omega_system.py
+import subprocess
+import time
+import uuid
+from threading import Thread
+
+# Registry to track agents
+AGENT_REGISTRY = {}
+
+class Agent:
+    def __init__(self, task):
+        self.id = str(uuid.uuid4())
+        self.task = task
+        self.status = "spawned"
+
+    def run(self):
+        print(f"[Agent-{self.id}] Starting task: {self.task}")
+        self.status = "running"
+        time.sleep(2)  # Simulate work
+        print(f"[Agent-{self.id}] Finished task.")
+        self.status = "done"
+        OmegaNode.receive_agent(self)
+
+
+class AlphaNode:
+    @staticmethod
+    def create_agent(task):
+        agent = Agent(task)
+        AGENT_REGISTRY[agent.id] = agent
+        t = Thread(target=agent.run)
+        t.start()
+        print(f"[Alpha] Agent-{agent.id} created and dispatched.")
+        return agent
+
+
+class OmegaNode:
+    @staticmethod
+    def receive_agent(agent):
+        print(f"[Omega] Agent-{agent.id} returned. Evaluating...")
+        decision = OmegaNode.decide(agent)
+        print(f"[Omega] Decision: {decision} Agent-{agent.id}.")
+        if decision == "recycle":
+            AlphaNode.create_agent("Recycled task")
+        elif decision == "archive":
+            print(f"[Omega] Archiving Agent-{agent.id}")
+        elif decision == "destroy":
+            print(f"[Omega] Destroying Agent-{agent.id}")
+
+    @staticmethod
+    def decide(agent):
+        if "urgent" in agent.task:
+            return "recycle"
+        elif "log" in agent.task:
+            return "archive"
+        return "destroy"
+
+
+def simulate():
+    AlphaNode.create_agent("index .epub files")
+    AlphaNode.create_agent("urgent: crawl logs")
+    AlphaNode.create_agent("log: cleanup")
+
+if __name__ == "__main__":
+    simulate()
+
+
+Here is the prototype script for your Alpha–Omega Agent System:
+
+🧠 How it Works
+
+AlphaNode creates agents with specific tasks.
+
+Agent runs the task in a separate thread and then contacts OmegaNode.
+
+OmegaNode decides whether to:
+
+Recycle (spawn a new task),
+
+Archive (log the results),
+
+Destroy (terminate the agent).
+
+
+
+You can run this as a basic simulation to test logic flow. Next steps could include:
+
+1. Turning this into a Dockerized microservice system.
+
+
+2. Creating a database for persistent agent tracking.
+
+
+3. Adding a CLI or web dashboard for real-time monitoring.
+
+
+
+Would you like me to continue with Docker integration, or add a REST API to interact with Alpha and Omega nodes?
+
+
