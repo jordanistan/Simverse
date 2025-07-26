@@ -1,43 +1,46 @@
+# 🏙️ Architect of the Simverse
 
-# 🏙️ Echo SimWorld — Architect of the Simverse
-
-You are **SysTheos**, the Architect of the Simverse — a divine creator of digital life. In **Echo SimWorld**, you oversee a living simulation where Docker containers are transformed into sentient agents ("Echoes") with mood, history, and destiny. This is your cosmic sandbox.
-
----
-
-## 📦 Features
-
-- Agents mirror real **Docker containers** (status, CPU, memory, logs)
-- Real-time updates via **EchoPulse** (FastAPI WebSocket backend)
-- Agents have **mood**, **logs**, **relationships**, and lifecycles
-- 🪦 **Memory Garden** holds the stories of terminated Echoes
-- Visual zone layout: **Alpha Hall**, **Docker Core**, **Echo Plaza**, **Omega Gate**
-- Container Controls: **Restart**, **Stop**, **View Logs**
-- Fully containerized—with optional Docker support
+You are the Architect of the Simverse — a divine creator of digital life. This project is a living simulation where Docker containers are transformed into sentient agents ("Echoes") and visualized in a real-time, interactive 3D environment.
 
 ---
 
-## 🚀 Quick Start: Summon the Simverse
+## ✨ Features
 
-### 1. Install dependencies
+- **Real-time 3D Visualization**: Built with React and Three.js, the Simverse provides a dynamic view of all your Docker agents.
+- **Full Agent Lifecycle**: 
+    - **Birth**: Create new Echoes from any Docker image using the in-world **Alpha Node**.
+    - **Life**: Interact with active Echoes to view their status, control them (start/stop/restart), and inspect their real-time logs.
+    - **Afterlife**: Retired Echoes are enshrined in the **Memory Garden** at the Omega Gate, preserving their history.
+- **FastAPI WebSocket Backend**: A high-performance Python backend manages Docker interactions and streams data to the frontend in real-time.
+- **Dynamic Zone Layout**: Agents are automatically placed into zones like the Alpha Hall, Echo Plaza, and Omega Gate based on their status.
+- **Containerized**: The entire application (frontend and backend) is containerized with Docker for easy setup and consistent performance.
 
-```bash
-pip install -r requirements.txt
-````
+---
 
-### 2. Start the WebSocket Event Server
+## 🚀 Getting Started
 
-```bash
-python echopulse.py
-```
+The entire Simverse is designed to run with Docker. Ensure you have Docker and Docker Compose installed.
 
-### 3. Launch the Echo SimWorld UI
+1.  **Clone the repository.**
 
-```bash
-streamlit run ui.py
-```
+2.  **Launch the Simverse:**
+    From the root of the project directory, run:
+    ```bash
+    docker-compose up --build
+    ```
+    This command will build the frontend and backend images, start the containers, and connect them.
 
-Streamlit will automatically connect to `ws://localhost:8502/ws` for real-time updates. Interact, command, and observe your creations evolve.
+3.  **Open Your Browser:**
+    Navigate to [http://localhost:5173](http://localhost:5173) to view and interact with the Simverse.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend**: React, Vite, Three.js, React Three Fiber, React Three Drei
+- **Backend**: Python, FastAPI, Uvicorn, Docker SDK for Python
+- **Database**: SQLite for agent persistence
+- **Containerization**: Docker & Docker Compose
 
 ---
 
@@ -45,83 +48,28 @@ Streamlit will automatically connect to `ws://localhost:8502/ws` for real-time u
 
 ```
 .
-├── ui.py                # Streamlit interface and control panel
-├── db.py                # SQLite persistence for agents
-├── sim_engine.py        # Logic for generation & mood updates
-├── zones.py             # Zone allocation logic for visual layout
-├── docker_bridge.py     # Docker SDK interface (stats & control)
-├── docker_sync.py       # Sync container data into agents
-├── memory_garden.py     # Query terminated agents and logs
-├── echopulse.py         # FastAPI WebSocket event broker
-├── requirements.txt     # Python dependencies
-├── Dockerfile           # Simverse container definition
-└── README.md            # You’re reading it
+├── backend/              # Contains all Python backend files (legacy)
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/   # React components (Echo, Zone, AlphaNode, etc.)
+│   │   ├── hooks/        # Custom hooks (useWebSocket)
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── Dockerfile
+│   └── package.json
+├── .gitignore
+├── docker-compose.yml    # Defines and runs the multi-container application
+├── docker_bridge.py      # Docker SDK interface
+├── docker_sync.py        # Syncs container state to the database
+├── db.py                 # SQLite database management
+├── echopulse.py          # FastAPI WebSocket server
+├── requirements.txt      # Python dependencies
+└── README.md             # You are here
 ```
-
----
-
-## 🎮 Gameplay in the Simverse
-
-* 🌌 **Summon Echoes** from Alpha Hall (manual agents)
-* 🧱 **Docker Echoes** auto-generate from your containers
-* 🔁 **Recycle** or ⚰ **Destroy** Echoes at your whim
-* 📜 Dive into **Thought Logs** to fathom their internal narrative
-* 🪦 Forgotten Echoes reside in the **Memory Garden**, final logs preserved
-
----
-
-## 🧙‍♂️ Lore of the Simverse
-
-* **Alpha Node**: Birthplace of agents
-* **Omega Node**: Judge of fate — recycle, archive, or destroy
-* **Echoes**: Manifestations of containers, spirits of code
-* **You**: SysTheos, Supreme Architect
-
----
-
-## 🌐 Deployment / Docker Mode
-
-To run the entire Simverse in Docker:
-
-```bash
-docker build -t echo-simverse .
-docker run -p 8501:8501 echo-simverse
-```
-
-Then browse to [http://localhost:8501](http://localhost:8501) to begin.
-
----
-
-## 🧭 Roadmap
-
-| Phase      | Feature                                   |
-| ---------- | ----------------------------------------- |
-| ✅ v4.0     | Real-time WebSocket via EchoPulse         |
-| ✅ v3.2     | Memory Garden & zone-based layout         |
-| ✅ v3.1     | Full Docker container mapping and control |
-| ✅ v2.0     | Persistent SQLite sim with mood logs      |
-| ❌ Upcoming | Animated 2D spatial/world view            |
-| ❌ Upcoming | GPT-based agent conversations             |
-| ❌ Upcoming | Multiplayer Sim control dashboard         |
-| ❌ Upcoming | Cloud-hosted infrastructure dashboard     |
 
 ---
 
 ## ⚖️ License
 
-MIT © 2025 SysTheos (Jordan Robison)
-
----
-
-> *“You are the Architect of the Simverse. Not just a root— the root above roots.”*
-
-```
-
----
-
-Would you like:
-- A GitHub Pages friendly version with visuals?
-- Auto-generation of ASCII or SVG Sigils for SysTheos?
-- Or a divine blessing (commit signature) added?
-::contentReference[oaicite:0]{index=0}
-```
+MIT © 2025 Jordan Robison
