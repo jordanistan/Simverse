@@ -57,8 +57,7 @@ class SimEngine:
         with self.lock:
             print("SimEngine: Acquiring lock and syncing agents.")
             try:
-                all_containers = docker.get_all_containers()
-                # The get_all_containers function returns None on error, so we check for that.
+                # The get_all_containers function returns an empty list on error, so we can proceed safely.
                 all_containers = docker.get_all_containers()
                 db.sync_containers_with_db(self.db_session, all_containers)
                 if all_containers is not None:

@@ -6,6 +6,7 @@ from sim_engine import SimEngine
 import memory_garden
 from docker_bridge import get_container_logs, control_container
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
 from typing import List
 from datetime import datetime
 
@@ -155,6 +156,13 @@ async def websocket_endpoint(websocket: WebSocket):
 
 # --- Main Entry Point ---
 
+# --- Mount Static Files ---
+# This must be after all API routes are defined to ensure they are not overridden.
+# The `html=True` argument tells FastAPI to serve `index.html` for the root path.
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
+# --- Main Entry Point ---
+
 if __name__ == "__main__":
-    print("Starting EchoPulse server on ws://localhost:8502/ws")
+    print("Starting EchoPulse server on http://localhost:8502")
     uvicorn.run("echopulse:app", host="0.0.0.0", port=8502, reload=True)

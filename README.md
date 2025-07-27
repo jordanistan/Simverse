@@ -1,63 +1,64 @@
-# 🏙️ EchoSimWorld
+# EchoSimWorld
 
-Welcome to EchoSimWorld — a living simulation where Docker containers are transformed into sentient agents ("Echoes") and visualized in a real-time, interactive environment.
+**EchoSimWorld** is a simulation environment for managing autonomous agents, called "Echoes," which are represented as Docker containers. The platform provides a real-time 3D visualization for observing and interacting with these agents.
 
----
+## Architecture
 
-## ✨ Features
+The application is containerized into a single Docker image using a multi-stage build. This single container serves both:
 
-- **Real-time Visualization**: Built with Streamlit, EchoSimWorld provides a dynamic view of all your Docker agents.
-- **Full Agent Lifecycle**: Create new Echoes from any Docker image and interact with them to view their status and control them (start/stop/restart).
-- **FastAPI WebSocket Backend**: A high-performance Python backend manages Docker interactions and streams data to the frontend in real-time.
-- **Containerized**: The entire application is containerized with Docker for easy setup and consistent performance.
-- **Remote Monitoring**: Configure EchoSimWorld to monitor a remote Docker host, perfect for managing homelabs or servers.
+- **FastAPI Backend:** A WebSocket server (`echopulse.py`) that manages the simulation, communicates with the Docker daemon, and streams updates to the frontend.
+- **React Frontend:** A 3D user interface built with React and Three.js for visualizing the simulation.
 
----
+This unified architecture simplifies deployment and management.
 
-## 🚀 Getting Started
+## Getting Started
 
-The entire application is designed to run within a single Docker container. Ensure you have Docker installed.
+### Prerequisites
 
-1.  **Clone the repository.**
+- Docker Engine
 
-2.  **Build the Docker image:**
-    From the root of the project directory, run:
+### Build and Run
+
+1. **Build the Docker Image:**
+
+    The project uses a multi-stage `Dockerfile` that first builds the React frontend and then copies the static assets into the final Python image. To build the image, run the following command from the project root:
+
     ```bash
     docker build -t echosimworld:latest .
     ```
 
-3.  **Run the application (Local Monitoring):**
-    This command runs EchoSimWorld and connects it to your local Docker daemon by mounting the Docker socket.
-    ```bash
-    docker run -d -p 8501:8501 -p 8502:8502 -v /var/run/docker.sock:/var/run/docker.sock --name echosim echosimworld:latest
-    ```
+2. **Run the Docker Container:**
 
-4.  **Open Your Browser:**
-    Navigate to [http://localhost:8501](http://localhost:8501) to view and interact with the simulation.
+    The application can connect to either a local or a remote Docker daemon.
 
----
+    - **To connect to a local Docker daemon:**
 
-## 🌐 Monitoring a Remote Host
+        ```bash
+        docker run -d -p 8502:8502 --name echosim -v /var/run/docker.sock:/var/run/docker.sock echosimworld:latest
+        ```
 
-To configure EchoSimWorld to monitor a remote Docker instance (like a homelab server), set the `DOCKER_HOST_URL` environment variable when running the container.
+    - **To connect to a remote Docker daemon:**
 
-```bash
-# Replace YOUR_REMOTE_HOST_IP with the IP address of your server
-docker run -d -p 8501:8501 -p 8502:8502 \
-  -e DOCKER_HOST_URL="tcp://YOUR_REMOTE_HOST_IP:2375" \
-  --name echosim echosimworld:latest
-```
+        You must expose your remote Docker daemon on a TCP port (e.g., 2375) and set the `DOCKER_HOST_URL` environment variable when running the container:
 
-This assumes the remote Docker daemon is configured to listen on TCP port 2375. Once running, you can access the UI from any machine on your network by navigating to `http://<machine_ip_running_container>:8501`.
+        ```bash
+        docker run -d -p 8502:8502 --name echosim -e DOCKER_HOST_URL="tcp://<your-remote-docker-ip>:2375" echosimworld:latest
+        ```
+
+3. **Access the Application:**
+
+    Once the container is running, open your browser and navigate to:
+
+    [http://localhost:8502](http://localhost:8502)
 
 ---
 
 ## 🛠️ Tech Stack
 
--   **Frontend**: Streamlit
--   **Backend**: Python, FastAPI, Uvicorn, Docker SDK for Python
--   **Database**: SQLite for agent persistence
--   **Containerization**: Docker
+- **Frontend**: React, Three.js, Vite
+- **Backend**: Python, FastAPI, Uvicorn, Docker SDK
+- **Database**: SQLite
+- **Containerization**: Docker (Multi-stage build)
 
 ---
 
@@ -65,13 +66,12 @@ This assumes the remote Docker daemon is configured to listen on TCP port 2375. 
 
 ```text
 .
-├── .venv/                # Python virtual environment
+├── frontend/             # React frontend source code
 ├── .gitignore
-├── Dockerfile            # Defines the application container
+├── Dockerfile            # Multi-stage Dockerfile
 ├── README.md             # You are here
 ├── requirements.txt      # Python dependencies
-├── start.sh              # Startup script for backend and frontend
-├── ui.py                 # Streamlit frontend application
+├── start.sh              # Container startup script
 ├── echopulse.py          # FastAPI WebSocket backend
 ├── sim_engine.py         # Core simulation engine
 ├── docker_bridge.py      # Docker SDK interface

@@ -20,11 +20,13 @@ def get_docker_client():
             print(f"\n--- Docker client initialized successfully for remote host: {remote_host_url}. ---")
             return _client
         except docker.errors.DockerException as e:
-            print(f"\n--- Failed to connect to remote Docker host: {remote_host_url} ---")
+            print(f"\n--- FATAL: Failed to connect to remote Docker host: {remote_host_url} ---")
+            print(f"Please ensure the URL is correct and the remote Docker daemon is accessible.")
             print(f"Error details: {e}")
-            # Fall through to try local connection methods
+            _client = None
+            return _client # Explicitly stop if remote connection fails
 
-    # If remote fails or is not set, try standard local methods
+    # If remote is not set, try standard local methods
     try:
         # First, try the standard method, which respects DOCKER_HOST etc.
         _client = docker.from_env()
