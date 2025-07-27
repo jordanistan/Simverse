@@ -26,7 +26,8 @@ const assignZone = (agentStatus) => {
 };
 
 const Scene = () => {
-  const { data, sendMessage } = useWebSocket('ws://localhost:8502/ws');
+  const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8502/ws';
+  const { data, sendMessage } = useWebSocket(WS_URL);
   const [agents, setAgents] = useState([]);
   const [retiredAgents, setRetiredAgents] = useState([]);
   const [selectedAgentId, setSelectedAgentId] = useState(null);
