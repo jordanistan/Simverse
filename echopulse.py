@@ -5,7 +5,6 @@ import db
 from sim_engine import SimEngine
 import memory_garden
 from docker_bridge import get_container_logs, control_container
-from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from typing import List
 from datetime import datetime
@@ -13,23 +12,34 @@ from datetime import datetime
 # --- Global SimEngine Instance ---
 sim_engine: SimEngine = None
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Manages the application's lifespan events for startup and shutdown."""
-    global sim_engine
-    print("--- Server starting up ---")
-    db.init_db()
-    # Initialize and start the simulation engine
-    sim_engine = SimEngine(db_session=db.get_db_connection())
-    sim_engine.start()
-    # Start the continuous broadcast loop
-    asyncio.create_task(periodic_broadcast())
-    yield
-    print("--- Server shutting down ---")
-    sim_engine.stop()
-
 # --- FastAPI App Initialization ---
-app = FastAPI(title="EchoPulse WebSocket Server", lifespan=lifespan)
+app = FastAPI(title="EchoPulse WebSocket Server")
+
+@app.on_event("startup")
+async def startup_event():
+    """Handles application startup logic."""
+    global sim_engine
+    print("--- Server starting up... ---")
+    db.init_db()
+    print("--- Database initialized. ---")
+    # Initialize and start the simulation engine
+    print("--- Initializing SimEngine... ---")
+    sim_engine = SimEngine(db_session=db.get_db_connection())
+    print("--- SimEngine initialized. Starting... ---")
+    sim_engine.start()
+    print("--- SimEngine started. ---")
+
+    # Start the continuous broadcast loop
+    print("--- Creating periodic broadcast task... ---")
+    asyncio.create_task(periodic_broadcast())
+    print("--- Startup complete. ---")
+
+@app.on_event("shutdown")
+def shutdown_event():
+    """Handles application shutdown logic."""
+    print("--- Server shutting down ---")
+    if sim_engine:
+        sim_engine.stop()
 
 # --- Connection Manager ---
 
@@ -147,4 +157,4 @@ async def websocket_endpoint(websocket: WebSocket):
 
 if __name__ == "__main__":
     print("Starting EchoPulse server on ws://localhost:8502/ws")
-    uvicorn.run(app, host="0.0.0.0", port=8502)
+    uvicorn.run("echopulse:app", host="0.0.0.0", port=8502, reload=True)

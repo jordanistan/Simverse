@@ -21,15 +21,20 @@ class SimEngine:
         self.db_session = db_session
         self.is_running = False
         self.lock = Lock()
+        self.docker_client = docker.get_docker_client() # Force immediate initialization
         self._sync_thread = Thread(target=self._periodic_sync, daemon=True)
 
     def start(self):
         """Starts the engine's background synchronization thread."""
         if not self.is_running:
             print("--- Simulation Engine starting ---")
-            self.is_running = True
-            self._sync_thread.start()
-            print("--- Simulation Engine is running ---")
+            if self.docker_client:
+                print("--- Docker client confirmed. Starting sync thread. ---")
+                self.is_running = True
+                self._sync_thread.start()
+                print("--- Simulation Engine is running ---")
+            else:
+                print("--- FATAL: Could not get Docker client. SimEngine will not run. ---")
 
     def stop(self):
         """Stops the engine's background thread."""
@@ -53,11 +58,16 @@ class SimEngine:
             print("SimEngine: Acquiring lock and syncing agents.")
             try:
                 all_containers = docker.get_all_containers()
-                if all_containers:
-                    db.sync_containers_with_db(self.db_session, all_containers)
+                # The get_all_containers function returns None on error, so we check for that.
+                all_containers = docker.get_all_containers()
+                db.sync_containers_with_db(self.db_session, all_containers)
+                if all_containers is not None:
                     print(f"SimEngine: Synced {len(all_containers)} containers.")
+            except docker.errors.APIError as e:
+                print(f"SimEngine: Docker API error during sync: {e}")
             except Exception as e:
-                print(f"SimEngine: Error during sync: {e}")
+                # Catching other potential errors, e.g., from the DB layer
+                print(f"SimEngine: An unexpected error occurred during sync: {e}")
 
     def create_new_agent(self, name, image="hello-world"):
         """Creates a new agent (Docker container).

@@ -1,4 +1,5 @@
 import docker
+import os
 
 # --- Docker Client Initialization ---
 _client = None
@@ -6,13 +7,46 @@ _client = None
 def get_docker_client():
     """Initializes and returns a Docker client, reusing if already created."""
     global _client
-    if _client is None:
+    if _client is not None:
+        return _client
+
+    # Check for a remote Docker host URL from environment variables
+    remote_host_url = os.environ.get('DOCKER_HOST_URL')
+    if remote_host_url:
         try:
-            _client = docker.from_env()
-        except docker.errors.DockerException:
-            print("\n--- Docker is not running or accessible. ---")
-            print("Please start Docker and restart the application.")
-            _client = None
+            print(f"\n--- Attempting to connect to remote Docker host: {remote_host_url} ---")
+            _client = docker.DockerClient(base_url=remote_host_url)
+            _client.ping()
+            print(f"\n--- Docker client initialized successfully for remote host: {remote_host_url}. ---")
+            return _client
+        except docker.errors.DockerException as e:
+            print(f"\n--- Failed to connect to remote Docker host: {remote_host_url} ---")
+            print(f"Error details: {e}")
+            # Fall through to try local connection methods
+
+    # If remote fails or is not set, try standard local methods
+    try:
+        # First, try the standard method, which respects DOCKER_HOST etc.
+        _client = docker.from_env()
+        _client.ping()
+        print("\n--- Docker client initialized successfully from environment. ---")
+        return _client
+    except docker.errors.DockerException as e:
+        print("\n--- Could not connect to Docker from environment. Trying default socket... ---")
+        print(f"Initial error: {e}")
+
+    # If from_env fails, try connecting to the default Unix socket directly
+    try:
+        _client = docker.DockerClient(base_url='unix://var/run/docker.sock')
+        _client.ping()
+        print("\n--- Docker client initialized successfully via default socket. ---")
+    except docker.errors.DockerException as e:
+        print("\n--- Docker is not running or accessible. ---")
+        print("Could not connect to Docker. Please ensure Docker Desktop is running.")
+        print(f"Error details: {e}")
+        print("If Docker is running, your environment may not be configured correctly.")
+        _client = None
+
     return _client
 
 def get_all_containers():

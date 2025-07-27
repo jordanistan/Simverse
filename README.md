@@ -1,72 +1,63 @@
-# 🏙️ Architect of the Simverse
+# 🏙️ EchoSimWorld
 
-You are the Architect of the Simverse — a divine creator of digital life. This project is a living simulation where Docker containers are transformed into sentient agents ("Echoes") and visualized in a real-time, interactive 3D environment.
+Welcome to EchoSimWorld — a living simulation where Docker containers are transformed into sentient agents ("Echoes") and visualized in a real-time, interactive environment.
 
 ---
 
 ## ✨ Features
 
-- **Real-time 3D Visualization**: Built with React and Three.js, the Simverse provides a dynamic view of all your Docker agents.
-- **Full Agent Lifecycle**:
-  - **Birth**: Create new Echoes from any Docker image using the in-world **Alpha Node**.
-  - **Life**: Interact with active Echoes to view their status, control them (start/stop/restart), and inspect their real-time logs.
-  - **Afterlife**: Retired Echoes are enshrined in the **Memory Garden** at the Omega Gate, preserving their history.
+- **Real-time Visualization**: Built with Streamlit, EchoSimWorld provides a dynamic view of all your Docker agents.
+- **Full Agent Lifecycle**: Create new Echoes from any Docker image and interact with them to view their status and control them (start/stop/restart).
 - **FastAPI WebSocket Backend**: A high-performance Python backend manages Docker interactions and streams data to the frontend in real-time.
-- **Dynamic Zone Layout**: Agents are automatically placed into zones like the Alpha Hall, Echo Plaza, and Omega Gate based on their status.
-- **Containerized**: The entire application (frontend and backend) is containerized with Docker for easy setup and consistent performance.
+- **Containerized**: The entire application is containerized with Docker for easy setup and consistent performance.
+- **Remote Monitoring**: Configure EchoSimWorld to monitor a remote Docker host, perfect for managing homelabs or servers.
 
 ---
 
 ## 🚀 Getting Started
 
-The entire Simverse is designed to run with Docker. Ensure you have Docker and Docker Compose installed.
+The entire application is designed to run within a single Docker container. Ensure you have Docker installed.
 
-1. **Clone the repository.**
+1.  **Clone the repository.**
 
-2. **Launch the Simverse:**
+2.  **Build the Docker image:**
+    From the root of the project directory, run:
+    ```bash
+    docker build -t echosimworld:latest .
+    ```
 
-   From the root of the project directory, run:
+3.  **Run the application (Local Monitoring):**
+    This command runs EchoSimWorld and connects it to your local Docker daemon by mounting the Docker socket.
+    ```bash
+    docker run -d -p 8501:8501 -p 8502:8502 -v /var/run/docker.sock:/var/run/docker.sock --name echosim echosimworld:latest
+    ```
 
-   ```bash
-   docker-compose up --build
-   ```
-
-   This command will build the frontend and backend images, start the containers, and connect them.
-
-3. **Open Your Browser:**
-
-   Navigate to [http://localhost:5173](http://localhost:5173) to view and interact with the Simverse.
+4.  **Open Your Browser:**
+    Navigate to [http://localhost:8501](http://localhost:8501) to view and interact with the simulation.
 
 ---
 
-## 🌐 Deploying to a Remote Host
+## 🌐 Monitoring a Remote Host
 
-To deploy the Simverse to a remote server, you need to configure the frontend to point to your server's public IP address or domain name.
+To configure EchoSimWorld to monitor a remote Docker instance (like a homelab server), set the `DOCKER_HOST_URL` environment variable when running the container.
 
-1.  **Navigate to the `frontend` directory.**
+```bash
+# Replace YOUR_REMOTE_HOST_IP with the IP address of your server
+docker run -d -p 8501:8501 -p 8502:8502 \
+  -e DOCKER_HOST_URL="tcp://YOUR_REMOTE_HOST_IP:2375" \
+  --name echosim echosimworld:latest
+```
 
-2. **Create a `.env` file** by copying the example:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-3. **Edit the `.env` file** and replace the placeholder with your server's IP or domain:
-
-   ```sh
-   VITE_WS_URL=ws://your_remote_host_ip:8502/ws
-   ```
-
-4. **On your server**, make sure you have Docker and Docker Compose installed, and then run `docker-compose up --build` from the project root. Ensure ports `5173` and `8502` are open in your firewall.
+This assumes the remote Docker daemon is configured to listen on TCP port 2375. Once running, you can access the UI from any machine on your network by navigating to `http://<machine_ip_running_container>:8501`.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React, Vite, Three.js, React Three Fiber, React Three Drei
-- **Backend**: Python, FastAPI, Uvicorn, Docker SDK for Python
-- **Database**: SQLite for agent persistence
-- **Containerization**: Docker & Docker Compose
+-   **Frontend**: Streamlit
+-   **Backend**: Python, FastAPI, Uvicorn, Docker SDK for Python
+-   **Database**: SQLite for agent persistence
+-   **Containerization**: Docker
 
 ---
 
@@ -74,27 +65,17 @@ To deploy the Simverse to a remote server, you need to configure the frontend to
 
 ```text
 .
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── components/   # React components (Echo, Zone, AlphaNode, etc.)
-│   │   ├── hooks/        # Custom hooks (useWebSocket)
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── .env.example      # Example environment configuration
-│   ├── Dockerfile
-│   └── package.json
+├── .venv/                # Python virtual environment
 ├── .gitignore
-├── docker-compose.yml    # Defines and runs the multi-container application
-├── Dockerfile            # The Dockerfile for the backend service
-├── start.sh              # Startup script for the backend services
-├── sim_engine.py         # Core simulation engine
-├── memory_garden.py      # Manages retired agents
-├── docker_bridge.py      # Docker SDK interface
-├── db.py                 # SQLite database management
-├── echopulse.py          # FastAPI WebSocket server
+├── Dockerfile            # Defines the application container
+├── README.md             # You are here
 ├── requirements.txt      # Python dependencies
-└── README.md             # You are here
+├── start.sh              # Startup script for backend and frontend
+├── ui.py                 # Streamlit frontend application
+├── echopulse.py          # FastAPI WebSocket backend
+├── sim_engine.py         # Core simulation engine
+├── docker_bridge.py      # Docker SDK interface
+└── db.py                 # SQLite database management
 ```
 
 ---
