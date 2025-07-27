@@ -58,8 +58,14 @@ const Echo = ({ agent, position, color = 'cyan', isSelected, onSelect, onCommand
               >
                 Restart
               </button>
-              <button 
-                onClick={(e) => { 
+              <button
+                onClick={(e) => { e.stopPropagation(); onCommand(agent.id, 'retire_agent'); }}
+                style={{...buttonStyle, backgroundColor: '#ef4444'}}
+              >
+                Retire
+              </button>
+              <button
+                onClick={(e) => {
                   e.stopPropagation(); 
                   onCommand(agent.id, 'get_logs');
                   setShowLogs(!showLogs);

@@ -2,23 +2,31 @@ import asyncio
 import uvicorn
 import json
 import db
-import docker_sync
-from docker_bridge import get_docker_client, get_all_containers, get_container_stats, control_container, get_container_logs, create_agent
+from sim_engine import SimEngine
+import memory_garden
+from docker_bridge import get_container_logs, control_container
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from typing import List
 from datetime import datetime
 
+# --- Global SimEngine Instance ---
+sim_engine: SimEngine = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manages the application's lifespan events for startup and shutdown."""
+    global sim_engine
     print("--- Server starting up ---")
     db.init_db()
-    # Start the continuous sync loop
-    asyncio.create_task(sync_and_broadcast())
+    # Initialize and start the simulation engine
+    sim_engine = SimEngine(db_session=db.get_db_connection())
+    sim_engine.start()
+    # Start the continuous broadcast loop
+    asyncio.create_task(periodic_broadcast())
     yield
     print("--- Server shutting down ---")
+    sim_engine.stop()
 
 # --- FastAPI App Initialization ---
 app = FastAPI(title="EchoPulse WebSocket Server", lifespan=lifespan)
@@ -53,23 +61,18 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# --- Background Sync Task ---
+# --- Background Broadcast Task ---
 
-async def sync_and_broadcast(once=False):
-    """Syncs with Docker and broadcasts the agent list, either once or in a loop."""
-    print("Running sync and broadcast...")
-    docker_sync.sync_agents_with_docker()
-    active_agents = db.get_all_agents(active_only=True)
-    inactive_agents = db.get_memory_garden_agents()
-    await manager.broadcast_json({
-        "type": "full_update",
-        "agents": active_agents + inactive_agents # Send a single list for easier frontend processing
-    })
-    print("Broadcast complete.")
-
-    if not once:
-        await asyncio.sleep(5)
-        asyncio.create_task(sync_and_broadcast()) # Schedule the next run
+async def periodic_broadcast():
+    """Periodically fetches all agents from the DB and broadcasts them."""
+    while True:
+        print("Broadcasting agent states...")
+        all_agents = db.get_all_agents(active_only=False)
+        await manager.broadcast_json({
+            "type": "full_update",
+            "agents": all_agents
+        })
+        await asyncio.sleep(5) # Broadcast every 5 seconds
 
 
 
@@ -106,24 +109,28 @@ async def websocket_endpoint(websocket: WebSocket):
                 print(message)
                 # Immediately send a command confirmation back to the specific client
                 await websocket.send_json({"type": "command_receipt", "success": success, "message": message})
-                # Trigger an immediate sync and broadcast to all clients
-                asyncio.create_task(sync_and_broadcast(once=True))
+                # The SimEngine will pick up the state change on its next cycle
 
             elif action == "create_agent":
                 name = command.get("name")
-                image = command.get("image", "hello-world") # Default to hello-world if not provided
+                image = command.get("image", "hello-world")
                 if not name:
                     await websocket.send_json({"type": "error", "message": "Agent name is required."})
                 else:
                     print(f"WebSocket request to create agent: {name} from image {image}")
-                    success, result = create_agent(name, image)
+                    success, result = sim_engine.create_new_agent(name, image)
                     if success:
-                        print("Agent creation successful, running sync and broadcasting...")
                         await websocket.send_json({"type": "command_receipt", "success": True, "message": f"Agent {name} created successfully."})
-                        # Trigger an immediate sync and broadcast to all clients
-                        asyncio.create_task(sync_and_broadcast(once=True))
                     else:
                         await websocket.send_json({"type": "error", "message": f"Failed to create agent: {result}"})
+
+            elif action == "retire_agent" and container_id:
+                print(f"WebSocket request to retire agent: {container_id}")
+                success, message = memory_garden.retire_agent(container_id)
+                if success:
+                    await websocket.send_json({"type": "command_receipt", "success": True, "message": message})
+                else:
+                    await websocket.send_json({"type": "error", "message": message})
             
             else:
                 print(f"Received unknown command or missing data: {command}")

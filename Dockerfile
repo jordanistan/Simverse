@@ -17,11 +17,9 @@ COPY . .
 EXPOSE 8501
 EXPOSE 8502
 
-# Create and make the startup script executable
-RUN echo '#!/bin/sh' > start.sh && \
-    echo 'uvicorn echopulse:app --host 0.0.0.0 --port 8502 &' >> start.sh && \
-    echo 'streamlit run ui.py --server.port 8501 --server.address 0.0.0.0' >> start.sh && \
-    chmod +x start.sh
+# Copy the startup script and make it executable
+COPY start.sh .
+RUN chmod +x ./start.sh
 
 # Run the startup script
-CMD ["./start.sh"]
+CMD ["/app/start.sh"]
